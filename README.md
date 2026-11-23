@@ -1,3 +1,5 @@
+<p align="center"><img src="logo-horizontal.png" alt="SOMA" width="480"></p>
+
 # SOMA
 
 *Livre de cuisine et lifestyle.*
