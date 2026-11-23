@@ -132,6 +132,15 @@ nav .count{position:absolute;top:8px;left:calc(50% + 6px);background:var(--accen
 .kcal summary{cursor:pointer}
 .kcal p{margin:6px 0 0}
 .sel{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:4px 6px;font-size:14px}
+.habits{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;margin:10px 0 4px}
+.habits summary{cursor:pointer;font-size:15px;list-style:none}
+.habits summary::-webkit-details-marker{display:none}
+.habits summary::before{content:"▸ ";color:var(--muted)}
+.habits[open] summary::before{content:"▾ "}
+.habits .hint{font-size:13px;margin:8px 0 2px}
+.hlbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 6px;font-weight:600}
+.hchips{display:flex;flex-wrap:wrap;gap:6px}
+.hchips .chip{font-size:14px}
 .toggle{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-top:6px}
 </style>
 </head>
@@ -146,7 +155,82 @@ nav .count{position:absolute;top:8px;left:calc(50% + 6px);background:var(--accen
 /* ================= Données & stockage ================= */
 const BASE = (window.SOMA_RECIPES || []);
 const KEY = "soma.v1";
-const DEFAULT = {custom:{}, deleted:[], plan:{}, shop:[], pantry:[], favs:[], onlyComplete:false};
+const STAPLES = `## Fruits & légumes
+Carottes
+Courgettes
+Salade
+Tomates
+Pommes de terre
+Potimarron
+Ail
+Ciboulette
+## Crèmerie & œufs
+Beurre
+Beurre froid
+Crème
+Fromage
+Œufs
+## Boucherie & volaille
+Jambon
+Knacki
+## Poissonnerie
+Saumon
+## Boulangerie
+Pain de mie
+Pains burger
+Wraps
+## Épicerie
+Pâtes
+Lentilles
+Sauce bolognaise
+Soupe
+Sardines
+Choucroute
+Cornichons
+Maïzena
+Huile
+Jus de citron
+Fond de volaille
+Maggi
+Miel
+Confiture
+Compote
+Gâteaux
+Café
+Filtres à café
+## Épices
+Épices
+Piment d'Espelette
+## Saveurs d'Asie
+Épicerie asiatique
+## Surgelés
+Nuggets
+## Cave & boissons
+Ice tea
+## Hygiène
+Papier toilette
+Mouchoirs
+Dentifrice
+Gel douche
+Shampoing
+Déodorant
+Savon
+Gel hydroalcoolique
+## Entretien
+Sopalin
+Swiffer
+Vinaigre blanc
+Sacs poubelle
+Liquide vaisselle`;
+function parseStaples(txt){
+  let aisle = "Divers"; const out = [];
+  txt.split("\n").map(l => l.trim()).filter(Boolean).forEach(l => {
+    if(l.startsWith("#")) aisle = l.replace(/^#+\s*/, "") || "Divers";
+    else out.push({name: l.replace(/^[-•◦]\s*/, ""), aisle});
+  });
+  return out;
+}
+const DEFAULT = {custom:{}, deleted:[], plan:{}, shop:[], pantry:[], favs:[], onlyComplete:false, staples:STAPLES};
 let S;
 try { S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY) || "{}")); }
 catch(e){ S = structuredClone(DEFAULT); }
@@ -209,7 +293,11 @@ const AISLES = [
   ["Saveurs d'Asie", "sauce soja,soja,mirin,sake,saké,dashi,miso,nori,kombu,wasabi,sesame,huile sesame,nuoc-mam,nuoc mam,sauce nuoc,ponzu,kaeshi,bonite,tofu,somen,udon,nouille,nouilles riz,panko,sriracha,sauce sriracha,hoisin,sauce hoisin,vin shaoxing,tianmianjiang,nam pla,sauce huitre,sauce huître,vinaigre riz,riz rond,kirimochi,mochi,feuille riz,the,thé,the vert,matcha,the pois bleu,algue,soja noir,lait soja,farine riz gluant"],
   ["Épicerie", "riz,riz thai,farine,sucre,sucre glace,sucre roux,sel,gros sel,poivre,huile,huile olive,vinaigre,vinaigre balsamique,moutarde,mayonnaise,ketchup,concentre tomate,coulis,pulpe,pate,pate feuilletee,chapelure,fecule,maizena,gelatine,agar-agar,gelifiant,bouillon,cube bouillon,fond,fond veau,consomme,conserve,boite,pois chiche,lait coco,beurre cacahuete,beurre cacahouete,chocolat,chocolat blanc,miel,confiture,compote,gelee,cafe,vanille,sucre vanille,biscuit,biscuit cuillere,pain,pain mie,brioche,pain brioche,tortilla,olive,capre,poudre amande,muscovado,sirop,levure,sauce worcestershire,tabasco,sauce pimentee,petit pois,artichaut,marron glace"],
   ["Épices", "curry,curcuma,cumin,graine cumin,garam masala,paprika,piment,piment espelette,cannelle,baton cannelle,badiane,anis,anis etoile,clou girofle,girofle,cardamome,cardamone,garam massala,muscade,noix muscade,fenouil,fenugrec,graine coriandre,carvi,tout-epice,harissa,chili,poudre chili,poivre sichuan,poivre noir"],
-  ["Cave & boissons", "vin,vin blanc,vin rouge,cidre,rhum,chartreuse,jus pomme,jus orange,jus tomate,eau gazeuse,alcool"],
+  ["Cave & boissons", "vin,vin blanc,vin rouge,cidre,rhum,chartreuse,jus pomme,jus orange,jus tomate,eau gazeuse,alcool,ice tea,soda,biere"],
+  ["Boulangerie", "pain burger,wrap,baguette,pain mie"],
+  ["Surgelés", "nugget,surgele,glace,frite,pizza"],
+  ["Hygiène", "papier toilette,pq,mouchoir,dentifrice,brosse dent,gel douche,shampoing,shampooing,deodorant,savon,gel hydroalcoolique,gel hydro,rasoir,coton"],
+  ["Entretien", "sopalin,essuie-tout,swiffer,vinaigre blanc,sac poubelle,poubelle,liquide vaisselle,eponge,lessive,javel,tablette lave-vaisselle"],
 ];
 function aisleOf(name){
   const n = " " + norm(name) + " ";
@@ -414,14 +502,24 @@ function addToShop(r, k = 1){
   save();
   return `${added} article${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""}` + (skipped.length ? ` · ${skipped.length} déjà au placard` : "");
 }
+let habOpen = null;
 function viewShop(){
   const left = S.shop.filter(i => !i.done).length;
   const groups = {};
   S.shop.forEach(i => (groups[i.done ? "✓ Dans le panier" : i.aisle] ||= []).push(i));
-  const order = [...AISLES.map(a => a[0]), "Divers", "✓ Dans le panier"];
+  const habits = parseStaples(S.staples ?? STAPLES);
+  const order = [...new Set([...AISLES.map(a => a[0]), ...habits.map(h => h.aisle), "Divers", "✓ Dans le panier"])];
+  const inList = name => S.shop.some(i => !i.done && norm(i.name) === norm(name));
+  const hGroups = {}; habits.forEach((h, k) => (hGroups[h.aisle] ||= []).push([h, k]));
+  const nOn = habits.filter(h => inList(h.name)).length;
   $("#view").innerHTML = `
     <div class="brand"><h1>Courses</h1><small>${left} à prendre</small></div>
     <form class="add" id="addf"><input class="search" id="ni" placeholder="Ajouter un article (ex : 6 œufs)" autocomplete="off"><button class="btn primary">＋</button></form>
+    <details class="habits" id="hab" ${habOpen ?? !S.shop.length ? "open" : ""}><summary><b>Mes habituels</b> <span class="muted">· ${habits.length} articles${nOn ? " · " + nOn + " dans la liste" : ""}</span></summary>
+      <p class="muted hint">Touchez un article pour l'ajouter à la liste, touchez-le encore pour le retirer.</p>
+      ${Object.entries(hGroups).map(([a, hs]) => `<div class="hlbl">${esc(a)}</div><div class="hchips">${hs.map(([h, k]) => `<button class="chip ${inList(h.name) ? "on" : ""}" data-h="${k}">${inList(h.name) ? "✓ " : ""}${esc(h.name)}</button>`).join("")}</div>`).join("")}
+      <div class="btns"><button class="btn sm" id="hedit">Modifier mes habituels</button></div>
+    </details>
     ${S.shop.length ? order.filter(a => groups[a]).map(a => `<div class="aisle">${esc(a)}</div>` + groups[a].map(i => `
       <div class="item ${i.done ? "done" : ""}" data-id="${i.id}"><button class="chk" data-a="t">${i.done ? "✓" : ""}</button>
       <div class="nm">${esc(i.name)}${i.from && i.from.length ? `<span class="from">${esc(i.from.join(", "))}</span>` : ""}</div>
@@ -438,7 +536,21 @@ function viewShop(){
     S.shop.push({id: uid(), name, qty: q, unit: u, aisle: aisleOf(name), done: false, from: []});
     save(); viewShop(); $("#ni").focus();
   };
+  $("#hab").ontoggle = e => { habOpen = e.target.open; };
+  $("#hedit").onclick = () => {
+    openSheet(`<h3>Mes habituels</h3><label class="field"><span>Un article par ligne · « ## Rayon » pour changer de rayon</span><textarea id="stx" style="min-height:50vh">${esc(S.staples ?? STAPLES)}</textarea></label>
+      <div class="btns"><button class="btn primary" id="sok">Enregistrer</button><button class="btn ghost" id="srs">Revenir à la liste d'origine</button></div>`);
+    $("#sok").onclick = () => { S.staples = $("#stx").value; save(); closeSheet(); viewShop(); toast("Habituels enregistrés"); };
+    $("#srs").onclick = () => { $("#stx").value = STAPLES; };
+  };
   $("#view").onclick = e => {
+    const hb = e.target.closest("[data-h]");
+    if(hb){
+      const h = habits[+hb.dataset.h];
+      if(inList(h.name)) S.shop = S.shop.filter(i => i.done || norm(i.name) !== norm(h.name));
+      else S.shop.push({id: uid(), name: h.name, qty: null, unit: null, aisle: h.aisle, done: false, from: []});
+      save(); viewShop(); return;
+    }
     const b = e.target.closest("[data-a]"); if(!b) return;
     const id = b.closest(".item").dataset.id, it = S.shop.find(i => i.id === id);
     if(b.dataset.a === "t") it.done = !it.done; else S.shop = S.shop.filter(i => i.id !== id);
